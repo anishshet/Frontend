@@ -1,6 +1,7 @@
 import { LoginPage } from './pages/LoginPage';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import { UpdatePassword } from './pages/UpdatePassword';
 
 
 function App() {
@@ -11,6 +12,7 @@ function App() {
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          
         </Routes>
       </BrowserRouter>
     </div>
