@@ -4,24 +4,14 @@ export interface User {
     firstName: string;
     lastName: string;
     role: string;
+    token: string;
     // Add any other user properties from your backend
-  }
-  
-  export interface MFALoginResponse {
-    success: boolean;
-    mfaEnabled: boolean;
-    mfaRequired: boolean;
-    message: string;
-    userId: string;
-    qrCodeUrl?: string;
   }
   
   export interface AuthContextType {
     user: User | null;
-    login: (email: string, password: string) => Promise<User | MFALoginResponse>;
+    isAuthenticated: boolean;
+    login: (email: string, password: string) => Promise<User>;
     logout: () => void;
     getToken: () => string | null;
-    mfaPending: boolean;
-    setMfaPending: (value: boolean) => void;
-    setUser: (user: User | null) => void;
   }

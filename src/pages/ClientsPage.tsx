@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Building, Trash2 } from 'lucide-react';
 import { CreateClientPage } from './CreateClientPage';
@@ -10,8 +10,6 @@ interface Client {
   clientCode: string;
   createdAt: string;
 }
-
-// Mock data for static display
 const mockClients: Client[] = [
   {
     _id: '1',

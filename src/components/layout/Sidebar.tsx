@@ -4,6 +4,7 @@ import {
   X, 
   LayoutDashboard, 
   Building, 
+  UserPlus
 } from "lucide-react";
 
 interface SidebarProps {
@@ -49,6 +50,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             >
               <Building className="w-4 h-4" />
               Clients
+            </Link>
+            
+            <Link
+              to="/invitations"
+              onClick={onClose}
+              className="flex items-center gap-2 px-5 py-3 text-gray-700 font-medium rounded-lg transition-all duration-300 hover:bg-gray-200 hover:text-gray-900 hover:scale-105"
+            >
+              <UserPlus className="w-4 h-4" />
+              Invitations
             </Link>
           
         </nav>

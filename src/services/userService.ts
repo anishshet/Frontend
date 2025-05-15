@@ -3,25 +3,36 @@ import { type User } from '../types/auth';
 import { getAuthHeaders } from '../utils/authUtils';
 
 export const USER_KEY = 'USER';
-export const TOKEN_KEY = 'jwtToken'; // This key remains unchanged.
-const INACTIVITY_TIMEOUT = 60 * 60 * 1000; // 1 hour
-
-let inactivityTimer: NodeJS.Timeout;
+export const TOKEN_KEY = 'token';
 
 export const userService = {
   async login(email: string, password: string): Promise<User | null> {
     try {
+      // Mock login for development
+      const mockUser = {
+        _id: '123',
+        email: email,
+        firstName: 'Test',
+        lastName: 'User',
+        role: 'ADMIN',
+        token: 'mock-token-123'
+      };
+
+      localStorage.setItem(TOKEN_KEY, mockUser.token);
+      userService.setUser(mockUser);
+      
+      return mockUser;
+      
+      // Uncomment this for real API integration:
+      /*
       const response = await axios.post('api/authorization/login', { email, password });
       const data = response.data;
       
-      console.log('Login response:', data);
-
-      // Extract token and user data based on response structure
       let token: string | null = null;
       let userData: User | null = null;
 
       if (typeof data === 'object' && data !== null) {
-        // If response includes token and user separately
+        // Extract token
         if ('access_token' in data || 'token' in data) {
           token = data.access_token || data.token;
           userData = 'user' in data ? data.user : { ...data };
@@ -38,58 +49,32 @@ export const userService = {
         }
 
         if (userData) {
-          // Store token in session storage if available
+          // Store token in local storage if available
           if (token) {
-            sessionStorage.setItem(TOKEN_KEY, token);
-            console.log('Token stored in session storage:', token);
+            localStorage.setItem(TOKEN_KEY, token);
           }
 
-          // Store user data in local storage as before
+          // Store user data
           const userToStore = token ? { ...userData, token } : userData;
           userService.setUser(userToStore);
-          
-          userService.setupInactivityListeners();
           return userToStore;
         }
       }
 
       throw new Error('Invalid response format');
+      */
     } catch (error) {
       console.error('Login failed:', error);
       return null;
     }
   },
 
-  // New MFA verification function
-  async verifyMfa(userId: string, otp: string): Promise<any> {
-    try {
-      const response = await axios.post('api/authorization/verify-mfa', { userId, token: otp });
-      console.log('MFA verify response:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('MFA verification failed:', error);
-      throw error;
-    }
-  },
-
-  async regenerateMfa(userId: string): Promise<any> {
-    try {
-      const response = await axios.post('/api/authorization/regenerate-mfa', { userId });
-      console.log('Regenerate MFA response:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('Regenerate MFA failed:', error);
-      throw error;
-    }
-  },
-
   setUser(user: User): void {
-    sessionStorage.setItem(USER_KEY, JSON.stringify(user));
-    userService.resetInactivityTimer();
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
   },
 
   getUser(): User | null {
-    const userStr = sessionStorage.getItem(USER_KEY);
+    const userStr = localStorage.getItem(USER_KEY);
     if (!userStr) return null;
 
     try {
@@ -100,35 +85,13 @@ export const userService = {
     }
   },
 
-  // Now retrieve the token from session storage
   getToken(): string | null {
-    return sessionStorage.getItem(TOKEN_KEY);
+    return localStorage.getItem(TOKEN_KEY);
   },
 
   clearUser(): void {
-    sessionStorage.removeItem(USER_KEY);
-    sessionStorage.removeItem(TOKEN_KEY);
-    if (inactivityTimer) {
-      clearTimeout(inactivityTimer);
-    }
-  },
-
-  resetInactivityTimer(): void {
-    if (inactivityTimer) {
-      clearTimeout(inactivityTimer);
-    }
-
-    inactivityTimer = setTimeout(() => {
-      userService.clearUser();
-      window.location.href = '/login';
-    }, INACTIVITY_TIMEOUT);
-  },
-
-  setupInactivityListeners(): void {
-    const events = ['mousedown', 'keydown', 'mousemove', 'touchstart'];
-    events.forEach(event => {
-      document.addEventListener(event, userService.resetInactivityTimer);
-    });
+    localStorage.removeItem(USER_KEY);
+    localStorage.removeItem(TOKEN_KEY);
   },
   
   getAuthHeader(): { Authorization?: string } {
@@ -137,15 +100,25 @@ export const userService = {
   },
 };
 
-export async function logoutService(token: string | null) {
+export async function logoutService() {
   try {
+    // For now, just clear local data
+    userService.clearUser();
+    return { success: true };
+    
+    // Uncomment for API integration
+    /*
+    const token = userService.getToken();
     const response = await axios.post(
       "/api/user/logout",
       {},
       { headers: getAuthHeaders(token) }
     );
+    userService.clearUser();
     return response.data;
+    */
   } catch (error) {
+    userService.clearUser();
     throw error;
   }
 }
