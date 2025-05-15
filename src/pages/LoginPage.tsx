@@ -14,11 +14,12 @@ export function LoginPage() {
     
     // Simple validation
     if (email === "admin@example.com" && password === "password") {
-      // Admin login
-      navigate("/admin");
+     
+      sessionStorage.setItem('token', 'mock-admin-token');
+      navigate("/dashboard");
     } else if (email && password.length >= 6) {
-      // Regular user login
-      navigate("/");
+      sessionStorage.setItem('token', 'mock-user-token');
+      navigate("/dashboard");
     } else {
       setError("Invalid credentials");
     }
@@ -26,11 +27,8 @@ export function LoginPage() {
 
   return (
     <div className="absolute inset-0 flex flex-col justify-center items-center text-center bg-gray-900 text-gray-500">
-      {/* Background Effects */}
       <div className="absolute w-52 h-52 bg-gray-500 opacity-30 top-0 right-0 rounded-[10px_30px_600px_100px] blur-3xl"></div>
       <div className="absolute w-52 h-52 bg-gray-500 opacity-30 bottom-0 left-0 rounded-[100px_30px_600px_100px] blur-3xl"></div>
-
-      {/* Header */}
       <header className="flex flex-col items-center">
         <div className="w-16 h-16 mb-8 bg-gray-800 flex justify-center items-center rounded-lg shadow-lg">
           <img src="./clarovate.png" alt="Logo" className="w-10 h-10" />
