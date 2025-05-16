@@ -9,16 +9,18 @@ export const AuthLayout: React.FC = () => {
   const toggleSidebar = () => {
     setIsNavOpen(!isNavOpen);
   };
-
+  
   return (
-    <div className="min-h-screen bg-gray-100">
-      <Navbar toggleSidebar={toggleSidebar} />
+    <div className="flex h-screen bg-gray-100">
       <Sidebar isOpen={isNavOpen} onClose={() => setIsNavOpen(false)} />
-
-      {/* Main Content Area */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Outlet />
-      </main>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Navbar toggleSidebar={toggleSidebar} />
+        <main className="flex-1 overflow-y-auto">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <Outlet />
+          </div>
+        </main>
+      </div>
     </div>
   );
 };

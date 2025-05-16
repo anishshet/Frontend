@@ -8,6 +8,7 @@ import { ClientsPage } from './pages/ClientsPage';
 import Dashboard from './pages/Dashboard';
 import InvitationStatus from './pages/InvitationStatus';
 import { AuthProvider } from './contexts/AuthContext';
+import ManageUsers from './pages/ManageUsers';
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
           <Route element={<AuthLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/clients" element={<ClientsPage />} />
+            <Route path="/manage-users" element={<ManageUsers />} />
             <Route path="/invitations" element={<InvitationStatus />} />
           </Route>
         </Routes>

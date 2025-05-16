@@ -1,11 +1,5 @@
 import React, { createContext, useContext, useState } from 'react';
-
-type User = {
-  id: string;
-  name: string;
-  email: string;
-  token: string;
-};
+import { type User } from '../types/auth';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -32,10 +26,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (email: string, password: string): Promise<User> => {
     try {
       // Mock login for now
-      const mockUser = {
-        id: '123',
-        name: 'Test User',
+      const mockUser: User = {
+        _id: '123',
         email: email,
+        firstName: 'Test',
+        lastName: 'User',
+        role: 'ADMIN',
         token: 'mock-token-123'
       };
       
