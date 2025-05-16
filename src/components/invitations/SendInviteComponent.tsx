@@ -19,8 +19,7 @@ interface SendInviteComponentProps {
 }
 
 export function SendInviteComponent({ isPopup = false, onClose, onSuccess }: SendInviteComponentProps) {
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+ 
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("USER");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -32,13 +31,13 @@ export function SendInviteComponent({ isPopup = false, onClose, onSuccess }: Sen
     e.preventDefault();
     setSubmitError("");
     
-    if (!firstName || !lastName || !email || !role) {
+    if ( !email || !role) {
       setSubmitError("Please fill in all fields");
       return;
     }
 
     setIsSubmitting(true);
-    const data = { firstName, lastName, email, role };
+    const data = {  email, role };
     const token = getToken();
 
     try {
@@ -53,8 +52,7 @@ export function SendInviteComponent({ isPopup = false, onClose, onSuccess }: Sen
       }
 
       setSubmitSuccess(true);
-      setFirstName("");
-      setLastName("");
+     
       setEmail("");
       setRole("USER");
       
@@ -119,35 +117,9 @@ export function SendInviteComponent({ isPopup = false, onClose, onSuccess }: Sen
   // Form fields component for reuse
   const renderFormFields = () => (
     <div className={isPopup ? "grid grid-cols-1 md:grid-cols-2 gap-6" : "space-y-5"}>
-      <div>
-        <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
-          First Name
-        </label>
-        <input
-          type="text"
-          id="firstName"
-          value={firstName}
-          onChange={(e) => setFirstName(e.target.value)}
-          disabled={isSubmitting}
-          placeholder="Enter first name"
-          className="mt-1 block w-full h-11 px-4 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 transition-colors"
-        />
-      </div>
+     
       
-      <div>
-        <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
-          Last Name
-        </label>
-        <input
-          type="text"
-          id="lastName"
-          value={lastName}
-          onChange={(e) => setLastName(e.target.value)}
-          disabled={isSubmitting}
-          placeholder="Enter last name"
-          className="mt-1 block w-full h-11 px-4 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 transition-colors"
-        />
-      </div>
+      
       
       <div>
         <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">

@@ -4,8 +4,7 @@ import type { ChangeEvent, FormEvent, MouseEvent } from "react";
 // Types
 interface Invitation {
   _id: string;
-  firstName: string;
-  lastName: string;
+  
   email: string;
   role: string;
   status: string;
@@ -13,10 +12,10 @@ interface Invitation {
 
 // Mock data
 const mockInvitations = [
-  { _id: '1', firstName: 'John', lastName: 'Doe', email: 'john@example.com', role: 'USER', status: 'PENDING' },
-  { _id: '2', firstName: 'Jane', lastName: 'Smith', email: 'jane@example.com', role: 'ADMIN', status: 'APPROVED' },
-  { _id: '3', firstName: 'Michael', lastName: 'Johnson', email: 'michael@example.com', role: 'DESIGNER', status: 'PENDING' },
-  { _id: '4', firstName: 'Sarah', lastName: 'Williams', email: 'sarah@example.com', role: 'CO_ADMIN', status: 'EXPIRED' },
+  { _id: '1', email: 'john@example.com', role: 'USER', status: 'PENDING' },
+  { _id: '2',  email: 'jane@example.com', role: 'ADMIN', status: 'APPROVED' },
+  { _id: '3', email: 'michael@example.com', role: 'DESIGNER', status: 'PENDING' },
+  { _id: '4',  email: 'sarah@example.com', role: 'CO_ADMIN', status: 'EXPIRED' },
 ];
 
 // Role options for dropdown
@@ -30,15 +29,14 @@ const roleOptions = [
 
 export default function InvitationStatus() {
   // Main page state
-  const [filters, setFilters] = useState({ firstName: "", lastName: "", email: "", status: "", role: "" });
+  const [filters, setFilters] = useState({ email: "", status: "", role: "" });
   const [showModal, setShowModal] = useState(false);
   const [invitations, setInvitations] = useState(mockInvitations);
   const [loading, setLoading] = useState(false);
 
   // Form state for the invitation modal
   const [formState, setFormState] = useState({
-    firstName: "",
-    lastName: "",
+   
     email: "",
     role: "USER",
     isSubmitting: false,
@@ -49,8 +47,7 @@ export default function InvitationStatus() {
   // Filter invitations based on search criteria
   const filteredInvitations = invitations.filter(invitation => {
     return (
-      (!filters.firstName || invitation.firstName.toLowerCase().includes(filters.firstName.toLowerCase())) &&
-      (!filters.lastName || invitation.lastName.toLowerCase().includes(filters.lastName.toLowerCase())) &&
+      
       (!filters.email || invitation.email.toLowerCase().includes(filters.email.toLowerCase())) &&
       (!filters.role || invitation.role === filters.role) &&
       (!filters.status || invitation.status === filters.status)
@@ -70,9 +67,9 @@ export default function InvitationStatus() {
   // Handle invitation form submission
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const { firstName, lastName, email, role } = formState;
+    const { email, role } = formState;
     
-    if (!firstName || !lastName || !email) {
+    if ( !email) {
       setFormState(prev => ({ ...prev, error: "Please fill in all required fields" }));
       return;
     }
@@ -84,8 +81,7 @@ export default function InvitationStatus() {
       // Add new invitation to the list
       const newInvitation = {
         _id: Date.now().toString(),
-        firstName,
-        lastName,
+      
         email,
         role,
         status: 'PENDING'
@@ -95,8 +91,7 @@ export default function InvitationStatus() {
       
       // Reset form with success message
       setFormState({
-        firstName: "",
-        lastName: "",
+      
         email: "",
         role: "USER",
         isSubmitting: false,
@@ -159,32 +154,8 @@ export default function InvitationStatus() {
           
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-                <input
-                  type="text"
-                  id="firstName"
-                  name="firstName"
-                  value={formState.firstName}
-                  onChange={handleFormChange}
-                  disabled={formState.isSubmitting}
-                  placeholder="Enter first name"
-                  className="mt-1 block w-full h-11 px-4 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
-                />
-              </div>
-              <div>
-                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-                <input
-                  type="text"
-                  id="lastName"
-                  name="lastName"
-                  value={formState.lastName}
-                  onChange={handleFormChange}
-                  disabled={formState.isSubmitting}
-                  placeholder="Enter last name"
-                  className="mt-1 block w-full h-11 px-4 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
-                />
-              </div>
+              
+              
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                 <input
@@ -257,22 +228,7 @@ export default function InvitationStatus() {
       {/* Filters */}
       <div className="bg-white p-6 rounded-lg shadow mb-8">
         <div className="flex flex-wrap gap-4">
-          <input
-            type="text"
-            name="firstName"
-            placeholder="First Name"
-            value={filters.firstName}
-            onChange={handleFilterChange}
-            className="p-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <input
-            type="text"
-            name="lastName"
-            placeholder="Last Name"
-            value={filters.lastName}
-            onChange={handleFilterChange}
-            className="p-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+         
           <input
             type="email"
             name="email"
@@ -324,8 +280,7 @@ export default function InvitationStatus() {
         <table className="min-w-full">
           <thead className="bg-blue-600">
             <tr>
-              <th className="px-6 py-4 text-left text-white uppercase text-sm">First Name</th>
-              <th className="px-6 py-4 text-left text-white uppercase text-sm">Last Name</th>
+              
               <th className="px-6 py-4 text-left text-white uppercase text-sm">Email</th>
               <th className="px-6 py-4 text-left text-white uppercase text-sm">Role</th>
               <th className="px-6 py-4 text-left text-white uppercase text-sm">Status</th>
@@ -335,8 +290,7 @@ export default function InvitationStatus() {
             {filteredInvitations.length > 0 ? (
               filteredInvitations.map((invitation) => (
                 <tr key={invitation._id} className="border-b border-gray-200 hover:bg-gray-50 transition">
-                  <td className="px-6 py-4 text-gray-800">{invitation.firstName}</td>
-                  <td className="px-6 py-4 text-gray-800">{invitation.lastName}</td>
+                
                   <td className="px-6 py-4 text-gray-600">{invitation.email}</td>
                   <td className="px-6 py-4 text-gray-600">{invitation.role}</td>
                   <td className="px-6 py-4">
