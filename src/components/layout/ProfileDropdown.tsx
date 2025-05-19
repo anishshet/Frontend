@@ -1,8 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { UserIcon, ChevronDown, LogOut, Lock } from "lucide-react";
-import { userService } from "../../services/userService";
-import type { User } from "../../types/user";
+
+interface User {
+  email: string;
+  role: string;
+}
 
 interface ProfileDropdownProps {
   user: User;
@@ -10,27 +13,38 @@ interface ProfileDropdownProps {
 
 const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ user }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const navigate = useNavigate();
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const handleLogout = async () => {
     try {
-      setIsLoggingOut(true);
-      await userService.logout();
-      console.log('Logout successful');
+      // Clear the session token
+      sessionStorage.removeItem("token");
       navigate("/login");
     } catch (error) {
       console.error("Logout error:", error);
-      // Even if the API call fails, we should still clear local state
-      userService.logoutLocal();
-      navigate("/login");
-    } finally {
-      setIsLoggingOut(false);
     }
   };
 
+  // Close the dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsProfileOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
   return (
-    <div className="relative">
+    <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsProfileOpen(!isProfileOpen)}
         className="flex items-center space-x-3 px-5 py-2 rounded-xl bg-gray-900/80 backdrop-blur-md hover:bg-gray-800 transition-all duration-300 shadow-lg border border-gray-700"
@@ -40,7 +54,9 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ user }) => {
         </div>
         <div className="text-sm">
           <p className="font-semibold text-white">{user?.email || "User"}</p>
-          <p className="text-gray-400 text-xs capitalize">{user?.role || "Guest"}</p>
+          <p className="text-gray-400 text-xs capitalize">
+            {user?.role || "Guest"}
+          </p>
         </div>
         <ChevronDown
           size={18}
@@ -57,13 +73,10 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ user }) => {
               setIsProfileOpen(false);
               handleLogout();
             }}
-            disabled={isLoggingOut}
-            className={`flex items-center w-full px-5 py-2 text-sm text-white hover:bg-gray-800 transition-all duration-300 rounded-md ${
-              isLoggingOut ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
+            className="flex items-center w-full px-5 py-2 text-sm text-white hover:bg-gray-800 transition-all duration-300 rounded-md"
           >
             <LogOut size={18} className="mr-3 text-white" />
-            {isLoggingOut ? 'Logging out...' : 'Logout'}
+            Logout
           </button>
           <Link
             onClick={() => setIsProfileOpen(false)}
@@ -79,4 +92,4 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ user }) => {
   );
 };
 
-export default ProfileDropdown; 
+export default ProfileDropdown;
