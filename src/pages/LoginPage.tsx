@@ -1,27 +1,42 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
+import { userService } from "../services/userService";
+import type { LoginCredentials } from "../types/user";
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [credentials, setCredentials] = useState<LoginCredentials>({
+    email: "",
+    password: "",
+  });
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setCredentials(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Simple validation
-    if (email === "admin@example.com" && password === "password") {
-     
-      sessionStorage.setItem('token', 'mock-admin-token');
+    setError("");
+    setIsLoading(true);
+
+    try {
+      await userService.login(credentials);
+      const token = userService.getToken();
+      console.log('Login successful. Token:', token);
       navigate("/dashboard");
-    } else if (email && password.length >= 6) {
-      sessionStorage.setItem('token', 'mock-user-token');
-      navigate("/dashboard");
-    } else {
-      setError("Invalid credentials");
+    } catch (err) {
+      console.error('Login failed:', err);
+      setError("Invalid email or password");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -36,7 +51,6 @@ export function LoginPage() {
         <h1 className="text-white text-xl font-medium mb-2">Hi, welcome back!</h1>
       </header>
 
-      {/* Form */}
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-[min(300px,90vw)] mt-8">
         {error && (
           <div className="bg-red-500/10 text-red-400 px-4 py-2 rounded-lg text-sm">
@@ -46,9 +60,10 @@ export function LoginPage() {
 
         <input
           id="email"
+          name="email"
           type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          value={credentials.email}
+          onChange={handleChange}
           className="p-2 rounded-lg bg-gray-800 border border-gray-500 text-white outline-none placeholder-gray-400"
           placeholder="Email"
           required
@@ -57,9 +72,10 @@ export function LoginPage() {
         <div className="relative">
           <input
             id="password"
+            name="password"
             type={showPassword ? "text" : "password"}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            value={credentials.password}
+            onChange={handleChange}
             className="p-2 rounded-lg bg-gray-800 border border-gray-500 text-white outline-none w-full placeholder-gray-400"
             placeholder="Password"
             required
@@ -75,9 +91,12 @@ export function LoginPage() {
 
         <button
           type="submit"
-          className="p-2 rounded-lg bg-white text-gray-900 font-medium hover:bg-gray-100 transition-colors duration-300"
+          disabled={isLoading}
+          className={`p-2 rounded-lg bg-white text-gray-900 font-medium transition-colors duration-300 ${
+            isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'
+          }`}
         >
-          Sign in
+          {isLoading ? 'Signing in...' : 'Sign in'}
         </button>
 
         <Link

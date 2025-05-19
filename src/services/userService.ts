@@ -1,124 +1,94 @@
 import axios from 'axios';
-import { type User } from '../types/auth';
-import { getAuthHeaders } from '../utils/authUtils';
+import type { User, LoginCredentials, AuthResponse, ApiResponse } from '../types/user';
 
-export const USER_KEY = 'USER';
-export const TOKEN_KEY = 'token';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const TOKEN_STORAGE_KEY = 'access_token';
+const USER_STORAGE_KEY = 'user';
+const INACTIVITY_TIMEOUT = 60 * 60 * 1000; // 1 hour
+
+let inactivityTimer: ReturnType<typeof setTimeout>;
+
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  headers: { 'Content-Type': 'application/json' },
+});
+
+// Attach token dynamically before each request
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem(TOKEN_STORAGE_KEY);
+  if (token && config.headers) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Handle unauthorized responses globally
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      userService.logoutLocal();
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
 
 export const userService = {
-  async login(email: string, password: string): Promise<User | null> {
+  async login(credentials: LoginCredentials): Promise<User> {
+    const { data } = await api.post<ApiResponse<AuthResponse>>('/api/user/login', credentials);
+    const { user, access_token } = data.data;
+    
+    localStorage.setItem(TOKEN_STORAGE_KEY, access_token);
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+
+    setupInactivity();
+    return user;
+  },
+
+  async logout() {
     try {
-      // Mock login for development
-      const mockUser = {
-        _id: '123',
-        email: email,
-        firstName: 'Test',
-        lastName: 'User',
-        role: 'ADMIN',
-        token: 'mock-token-123'
-      };
-
-      localStorage.setItem(TOKEN_KEY, mockUser.token);
-      userService.setUser(mockUser);
-      
-      return mockUser;
-      
-      // Uncomment this for real API integration:
-      /*
-      const response = await axios.post('api/authorization/login', { email, password });
-      const data = response.data;
-      
-      let token: string | null = null;
-      let userData: User | null = null;
-
-      if (typeof data === 'object' && data !== null) {
-        // Extract token
-        if ('access_token' in data || 'token' in data) {
-          token = data.access_token || data.token;
-          userData = 'user' in data ? data.user : { ...data };
-        } else {
-          // If response is just the user object with token
-          if ('token' in data) {
-            token = data.token;
-            const { token: _, ...rest } = data;
-            userData = rest;
-          } else {
-            // If response is just the user object
-            userData = data;
-          }
+      await api.post('/api/user/logout', {}, {
+        headers: {
+          Authorization: `Bearer ${this.getToken()}`
         }
-
-        if (userData) {
-          // Store token in local storage if available
-          if (token) {
-            localStorage.setItem(TOKEN_KEY, token);
-          }
-
-          // Store user data
-          const userToStore = token ? { ...userData, token } : userData;
-          userService.setUser(userToStore);
-          return userToStore;
-        }
-      }
-
-      throw new Error('Invalid response format');
-      */
-    } catch (error) {
-      console.error('Login failed:', error);
-      return null;
+      });
+    } finally {
+      this.logoutLocal();
     }
   },
 
-  setUser(user: User): void {
-    localStorage.setItem(USER_KEY, JSON.stringify(user));
-  },
-
-  getUser(): User | null {
-    const userStr = localStorage.getItem(USER_KEY);
-    if (!userStr) return null;
-
-    try {
-      return JSON.parse(userStr) as User;
-    } catch (error) {
-      console.error('Error parsing user data:', error);
-      return null;
-    }
+  logoutLocal() {
+    localStorage.removeItem(TOKEN_STORAGE_KEY);
+    localStorage.removeItem(USER_STORAGE_KEY);
+    clearTimeout(inactivityTimer);
   },
 
   getToken(): string | null {
-    return localStorage.getItem(TOKEN_KEY);
+    return localStorage.getItem(TOKEN_STORAGE_KEY);
   },
 
-  clearUser(): void {
-    localStorage.removeItem(USER_KEY);
-    localStorage.removeItem(TOKEN_KEY);
+  getUser(): User | null {
+    const stored = localStorage.getItem(USER_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : null;
   },
-  
-  getAuthHeader(): { Authorization?: string } {
-    const token = userService.getToken();
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  },
+
+  isAuthenticated(): boolean {
+    return !!this.getToken();
+  }
 };
 
-export async function logoutService() {
-  try {
-    // For now, just clear local data
-    userService.clearUser();
-    return { success: true };
-    
-    // Uncomment for API integration
-    /*
-    const token = userService.getToken();
-    const response = await axios.post(
-      "/api/user/logout",
-      {},
-      { headers: getAuthHeaders(token) }
-    );
-    userService.clearUser();
-    return response.data;
-    */
-  } catch (error) {
-    userService.clearUser();
-    throw error;
-  }
+function setupInactivity(): void {
+  clearTimeout(inactivityTimer);
+  inactivityTimer = setTimeout(() => {
+    userService.logoutLocal();
+    window.location.href = '/login';
+  }, INACTIVITY_TIMEOUT);
+
+  ['mousedown', 'keydown', 'mousemove', 'touchstart'].forEach((evt) =>
+    document.addEventListener(evt, () => {
+      clearTimeout(inactivityTimer);
+      setupInactivity();
+    })
+  );
 }

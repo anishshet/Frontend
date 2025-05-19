@@ -1,11 +1,8 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { UserIcon, ChevronDown, LogOut, Lock } from "lucide-react";
-
-interface User {
-  email: string;
-  role: string;
-}
+import { userService } from "../../services/userService";
+import type { User } from "../../types/user";
 
 interface ProfileDropdownProps {
   user: User;
@@ -13,15 +10,22 @@ interface ProfileDropdownProps {
 
 const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ user }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const navigate = useNavigate();
 
   const handleLogout = async () => {
     try {
-      // Clear the session token
-      sessionStorage.removeItem('token');
+      setIsLoggingOut(true);
+      await userService.logout();
+      console.log('Logout successful');
       navigate("/login");
     } catch (error) {
       console.error("Logout error:", error);
+      // Even if the API call fails, we should still clear local state
+      userService.logoutLocal();
+      navigate("/login");
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 
@@ -53,10 +57,13 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ user }) => {
               setIsProfileOpen(false);
               handleLogout();
             }}
-            className="flex items-center w-full px-5 py-2 text-sm text-white hover:bg-gray-800 transition-all duration-300 rounded-md"
+            disabled={isLoggingOut}
+            className={`flex items-center w-full px-5 py-2 text-sm text-white hover:bg-gray-800 transition-all duration-300 rounded-md ${
+              isLoggingOut ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
           >
             <LogOut size={18} className="mr-3 text-white" />
-            Logout
+            {isLoggingOut ? 'Logging out...' : 'Logout'}
           </button>
           <Link
             onClick={() => setIsProfileOpen(false)}
