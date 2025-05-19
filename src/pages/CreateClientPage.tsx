@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UserPlus, Plus, X, Loader2 } from 'lucide-react';
+import { UserPlus, Plus, X, Loader2, Building } from 'lucide-react';
+import { ModalLayout } from '../components/ModalLayout';
 
 // Define interface for contact type
 interface Contact {
@@ -322,50 +323,30 @@ export function CreateClientPage({ isPopup = false, onClose, onSuccess }: Create
     </div>
   );
 
-  // When rendering as a popup
+  const formContent = (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {renderFormFields()}
+      {renderAlternateContacts()}
+      
+      <div className="flex justify-end pt-6 border-t border-gray-200 mt-8 mb-10">
+        {renderSubmitButton('large')}
+      </div>
+    </form>
+  );
+
   if (isPopup) {
     return (
-      <div 
-        className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center px-4 overflow-y-auto mt-16"
-        onClick={handleBackdropClick}
+      <ModalLayout
+        isOpen={true}
+        onClose={onClose || (() => {})}
+        title="Create Client"
+        icon={<Building className="w-6 h-6 text-blue-600" />}
       >
-        <div className="bg-white shadow-xl rounded-lg w-full max-w-3xl max-h-[80vh] overflow-hidden relative animate-scale-in my-auto">
-          {/* Header with gradient background */}
-          <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-t-lg px-6 py-4 sticky top-0 z-20">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <UserPlus className="w-6 h-6 text-blue-600" />
-                <h1 className="text-xl font-semibold text-gray-800">Create New Client</h1>
-              </div>
-              {onClose && (
-                <button 
-                  onClick={onClose}
-                  className="text-gray-600 hover:text-gray-800 transition-colors p-1.5 rounded-full hover:bg-gray-200 fixed right-4 top-4 z-30"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              )}
-            </div>
-          </div>
-          
-          <div className="p-8 overflow-y-auto rounded-b-lg custom-scrollbar" style={{ maxHeight: "calc(80vh - 60px)" }}>
-            {submitSuccess && renderSuccessMessage()}
-            
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {renderFormFields()}
-              {renderAlternateContacts()}
-              
-              <div className="flex justify-end pt-6 border-t border-gray-200 mt-8 mb-10">
-                {renderSubmitButton('large')}
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
+        {formContent}
+      </ModalLayout>
     );
   }
 
-  // When rendering as a standalone page
   return (
     <div className="bg-white shadow-lg rounded-lg p-8 max-w-3xl mx-auto">
       <div className="flex items-center space-x-3 mb-6">
@@ -375,14 +356,7 @@ export function CreateClientPage({ isPopup = false, onClose, onSuccess }: Create
       
       {submitSuccess && renderSuccessMessage()}
       
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {renderFormFields()}
-        {renderAlternateContacts()}
-        
-        <div className="flex justify-end">
-          {renderSubmitButton()}
-        </div>
-      </form>
+      {formContent}
     </div>
   );
 } 

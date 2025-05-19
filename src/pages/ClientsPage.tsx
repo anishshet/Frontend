@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Building, Edit, X } from 'lucide-react';
 import { CreateClientPage } from './CreateClientPage';
+import { ModalLayout } from '../components/ModalLayout';
 
 interface Client {
   _id: string;
@@ -45,97 +46,79 @@ const EditClientModal: React.FC<EditClientModalProps> = ({ isOpen, onClose, clie
     }
   };
 
-  if (!isOpen || !client) return null;
+  if (!client) return null;
 
   return (
-    <div 
-      className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center px-4 overflow-y-auto mt-16"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
+    <ModalLayout
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Edit Client"
+      icon={<Edit className="w-6 h-6 text-blue-600" />}
     >
-      <div className="bg-white shadow-xl rounded-lg w-full max-w-3xl max-h-[80vh] overflow-hidden relative animate-scale-in my-auto">
-        {/* Header with gradient background */}
-        <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-t-lg px-6 py-4 sticky top-0 z-20">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <Edit className="w-6 h-6 text-blue-600" />
-              <h1 className="text-xl font-semibold text-gray-800">Edit Client</h1>
-            </div>
-            <button 
-              onClick={onClose}
-              className="text-gray-600 hover:text-gray-800 transition-colors p-1.5 rounded-full hover:bg-gray-200 fixed right-4 top-4 z-30"
-            >
-              <X className="w-6 h-6" />
-            </button>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Client Name
+            </label>
+            <input
+              type="text"
+              value={formData.clientName}
+              onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
+              className="mt-1 block w-full h-11 px-4 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 transition-colors"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Location
+            </label>
+            <input
+              type="text"
+              value={formData.hqCountry}
+              onChange={(e) => setFormData({ ...formData, hqCountry: e.target.value })}
+              className="mt-1 block w-full h-11 px-4 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 transition-colors"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Client Code
+            </label>
+            <input
+              type="text"
+              value={formData.clientCode}
+              onChange={(e) => setFormData({ ...formData, clientCode: e.target.value })}
+              className="mt-1 block w-full h-11 px-4 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 transition-colors"
+              required
+            />
           </div>
         </div>
 
-        <div className="p-8 overflow-y-auto rounded-b-lg custom-scrollbar" style={{ maxHeight: "calc(80vh - 60px)" }}>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Client Name
-                </label>
-                <input
-                  type="text"
-                  value={formData.clientName}
-                  onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
-                  className="mt-1 block w-full h-11 px-4 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 transition-colors"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Location
-                </label>
-                <input
-                  type="text"
-                  value={formData.hqCountry}
-                  onChange={(e) => setFormData({ ...formData, hqCountry: e.target.value })}
-                  className="mt-1 block w-full h-11 px-4 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 transition-colors"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Client Code
-                </label>
-                <input
-                  type="text"
-                  value={formData.clientCode}
-                  onChange={(e) => setFormData({ ...formData, clientCode: e.target.value })}
-                  className="mt-1 block w-full h-11 px-4 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 transition-colors"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200 mt-8">
-              <button
-                type="button"
-                onClick={() => {
-                  if (window.confirm('Are you sure you want to delete this client?')) {
-                    // Handle delete
-                    onClose();
-                  }
-                }}
-                className="px-4 py-2 text-red-600 hover:text-red-800 font-medium transition-colors"
-              >
-                Delete Client
-              </button>
-              <button
-                type="submit"
-                className="px-6 py-3 text-base border border-transparent font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors shadow-sm"
-              >
-                Save Changes
-              </button>
-            </div>
-          </form>
+        <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200 mt-8">
+          <button
+            type="button"
+            onClick={() => {
+              if (window.confirm('Are you sure you want to delete this client?')) {
+                // Handle delete
+                onClose();
+              }
+            }}
+            className="px-4 py-2 text-red-600 hover:text-red-800 font-medium transition-colors"
+          >
+            Delete Client
+          </button>
+          <button
+            type="submit"
+            className="px-6 py-3 text-base border border-transparent font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors shadow-sm"
+          >
+            Save Changes
+          </button>
         </div>
-      </div>
-    </div>
+      </form>
+    </ModalLayout>
   );
 };
 
