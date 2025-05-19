@@ -19,8 +19,8 @@ export function ClientDetailsPage() {
   const [editedClient, setEditedClient] = useState<Client | null>(null);
   const { user } = useAuth();
 
-  // Only allow editing if the user is admin
-  const isEditAllowed = user && user.role.toLowerCase() === "admin";
+  // Only allow editing if the user is admin - case insensitive check
+  const isEditAllowed = user && user.role.toUpperCase() === "ADMIN";
 
   useEffect(() => {
     const fetchClientDetails = async () => {
