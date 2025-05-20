@@ -1,6 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, X, Loader2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import axios from 'axios';
+import { userService } from '../../services/userService'; 
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const TOKEN_STORAGE_KEY = 'token';
+
+// Debug helper function to check token format
+const validateTokenFormat = (token: string | null) => {
+  if (!token) return 'Token is empty';
+  
+  // JWT tokens are typically in the format: header.payload.signature
+  const parts = token.split('.');
+  if (parts.length !== 3) {
+    return `Invalid JWT format: expected 3 parts, got ${parts.length}`;
+  }
+  
+  return 'Token format looks valid (has 3 parts)';
+};
 
 interface Role {
   value: string;
@@ -13,6 +31,37 @@ interface SendInviteComponentProps {
   onSuccess?: () => void;
 }
 
+// Initialize axios instance
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  headers: { 'Content-Type': 'application/json' },
+});
+
+// Add token to requests automatically
+api.interceptors.request.use((config) => {
+  const token = sessionStorage.getItem(TOKEN_STORAGE_KEY);
+  if (token && config.headers) {
+    // Ensure token format exactly matches what works in Swagger UI
+    config.headers.Authorization = `Bearer ${token}`;
+    
+    // Debug the exact header being sent
+    console.log('Request headers:', config.headers);
+  }
+  return config;
+});
+
+// Add response interceptor for debugging
+api.interceptors.response.use(
+  (response) => {
+    console.log('API Response:', response);
+    return response;
+  },
+  (error) => {
+    console.error('API Error:', error.response || error);
+    return Promise.reject(error);
+  }
+);
+
 export function SendInviteComponent({ isPopup = false, onClose, onSuccess }: SendInviteComponentProps) {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("");
@@ -23,33 +72,36 @@ export function SendInviteComponent({ isPopup = false, onClose, onSuccess }: Sen
   const [submitError, setSubmitError] = useState("");
   const { getToken } = useAuth();
 
+  // Add log when component mounts
+  useEffect(() => {
+    console.log('COMPONENT MOUNTED: SendInviteComponent');
+    alert('Component loaded - check console');
+  }, []);
+  
+  useEffect(() => {
+    // Debug auth state
+    const contextToken = getToken();
+    const sessionToken = sessionStorage.getItem(TOKEN_STORAGE_KEY);
+    const serviceToken = userService.getToken();
+    
+    console.log('Auth token from context:', contextToken);
+    console.log('Context token validation:', validateTokenFormat(contextToken));
+    
+    console.log('Auth token from session:', sessionToken);
+    console.log('Session token validation:', validateTokenFormat(sessionToken));
+    
+    console.log('User service token:', serviceToken);
+    console.log('Service token validation:', validateTokenFormat(serviceToken));
+  }, [getToken]);
+
   // Fetch roles from API
   useEffect(() => {
     const fetchRoles = async () => {
+      setIsLoadingRoles(true);
       try {
-        const token = getToken();
-        if (!token) {
-          throw new Error('Authentication token is missing');
-        }
-
-        console.log('Using token for roles API:', token); // Debug log for token
-
-        const response = await fetch("/api/roles", {
-          method: "GET",
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('Roles API error:', errorText);
-          throw new Error('Failed to fetch roles');
-        }
-
-        const data = await response.json();
-        console.log('Roles data:', data); // Debug log
+        console.log('Fetching roles from:', `${API_BASE_URL}/api/roles`);
+        const { data } = await api.get('/api/roles');
+        console.log('Roles data received:', data);
         
         // Transform the roles to match our interface
         const formattedRoles = Array.isArray(data) ? 
@@ -71,9 +123,13 @@ export function SendInviteComponent({ isPopup = false, onClose, onSuccess }: Sen
     };
 
     fetchRoles();
-  }, [getToken]);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
+    // Add very obvious logs and alert
+    console.log('SUBMIT BUTTON CLICKED');
+    alert('Submit button clicked');
+    
     e.preventDefault();
     setSubmitError("");
     
@@ -84,45 +140,50 @@ export function SendInviteComponent({ isPopup = false, onClose, onSuccess }: Sen
 
     setIsSubmitting(true);
     
-    // Get the JWT token - ensuring we use the same token from login
-    const token = getToken();
-    console.log('Using token for invitation API:', token); // Debug log for token
-    
-    if (!token) {
-      setSubmitError("Authentication token is missing. Please log in again.");
-      setIsSubmitting(false);
-      return;
-    }
-
     try {
+      // Check authentication
+      const token = sessionStorage.getItem(TOKEN_STORAGE_KEY);
+      if (!token) {
+        setSubmitError("Not authenticated. Please login again.");
+        return;
+      }
+      
       // Prepare data matching the exact format required by API
       const data = { 
         email, 
         role 
       };
       
-      console.log('Sending invitation data:', data); // Debug log
+      console.log('Sending invitation with data:', data);
+      console.log('To endpoint:', `${API_BASE_URL}/api/invitation`);
       
-      const response = await fetch("/api/invitation", {
-        method: "POST",
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data),
-      });
-
-      console.log('Invitation response status:', response.status); // Debug log
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('API error response:', errorText); // Debug log
-        throw new Error(errorText || 'Failed to send invitation');
+      // Try using axios first
+      try {
+        const response = await api.post('/api/invitation', data);
+        console.log('Invitation response (axios):', response);
+      } catch (axiosError) {
+        console.error('Axios error:', axiosError);
+        
+        // If axios fails, try using fetch as fallback to troubleshoot
+        console.log('Trying with fetch as fallback...');
+        const fetchResponse = await fetch(`${API_BASE_URL}/api/invitation`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(data)
+        });
+        
+        const fetchResult = await fetchResponse.text();
+        console.log('Fetch status:', fetchResponse.status);
+        console.log('Fetch response:', fetchResult);
+        
+        if (!fetchResponse.ok) {
+          throw new Error(`Fetch failed: ${fetchResponse.status} ${fetchResult}`);
+        }
       }
-
-      const responseData = await response.json();
-      console.log('Invitation success response:', responseData); // Debug log
-
+      
       setSubmitSuccess(true);
       setEmail("");
       setRole(roles.length > 0 ? roles[0].value : "");
@@ -134,7 +195,8 @@ export function SendInviteComponent({ isPopup = false, onClose, onSuccess }: Sen
         }, 2000);
       }
     } catch (error: any) {
-      setSubmitError(error.message || "Error sending invitation. Please try again.");
+      const errorMessage = error.response?.data?.message || error.response?.data?.error || error.message;
+      setSubmitError(errorMessage || "Error sending invitation. Please try again.");
       console.error("Error sending invitation:", error);
     } finally {
       setIsSubmitting(false);
@@ -170,6 +232,9 @@ export function SendInviteComponent({ isPopup = false, onClose, onSuccess }: Sen
   const renderSubmitButton = (size: 'normal' | 'large' = 'normal') => (
     <button
       type="submit"
+      onClick={(e) => {
+        console.log('Button clicked directly!');
+      }}
       disabled={isSubmitting}
       className={`inline-flex items-center ${size === 'large' ? 'px-6 py-3 text-base' : 'px-5 py-2.5 text-sm'} border border-transparent font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors shadow-sm`}
     >
@@ -263,6 +328,45 @@ export function SendInviteComponent({ isPopup = false, onClose, onSuccess }: Sen
                 {renderSubmitButton('large')}
               </div>
             </form>
+
+            {/* Emergency direct test button */}
+            <div className="mt-4">
+              <button
+                onClick={() => {
+                  console.log("Direct test button clicked!");
+                  alert("Testing direct button click!");
+                  
+                  // Test direct API call with hardcoded values
+                  const testEmail = "test@example.com";
+                  const testRole = "ADMIN";
+                  
+                  // Try fetch first
+                  fetch(`${API_BASE_URL}/api/invitation`, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${sessionStorage.getItem(TOKEN_STORAGE_KEY)}`
+                    },
+                    body: JSON.stringify({ email: testEmail, role: testRole })
+                  })
+                  .then(response => {
+                    alert(`Test API call status: ${response.status}`);
+                    return response.text();
+                  })
+                  .then(data => {
+                    console.log("API response:", data);
+                    alert(`API response: ${data}`);
+                  })
+                  .catch(error => {
+                    console.error("Test API call failed:", error);
+                    alert(`Test API call failed: ${error.message}`);
+                  });
+                }}
+                className="bg-red-500 text-white px-4 py-2 rounded"
+              >
+                Emergency Test Button
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -287,6 +391,46 @@ export function SendInviteComponent({ isPopup = false, onClose, onSuccess }: Sen
           {renderSubmitButton()}
         </div>
       </form>
+
+      {/* Emergency direct test button */}
+      <div className="mt-6 pt-6 border-t border-gray-300">
+        <h2 className="text-lg font-medium text-gray-700 mb-2">Troubleshooting Tools</h2>
+        <button
+          onClick={() => {
+            console.log("Direct test button clicked!");
+            alert("Testing direct button click!");
+            
+            // Test direct API call with hardcoded values
+            const testEmail = "test@example.com";
+            const testRole = "ADMIN";
+            
+            // Try fetch first
+            fetch(`${API_BASE_URL}/api/invitation`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${sessionStorage.getItem(TOKEN_STORAGE_KEY)}`
+              },
+              body: JSON.stringify({ email: testEmail, role: testRole })
+            })
+            .then(response => {
+              alert(`Test API call status: ${response.status}`);
+              return response.text();
+            })
+            .then(data => {
+              console.log("API response:", data);
+              alert(`API response: ${data}`);
+            })
+            .catch(error => {
+              console.error("Test API call failed:", error);
+              alert(`Test API call failed: ${error.message}`);
+            });
+          }}
+          className="bg-red-500 text-white px-4 py-2 rounded"
+        >
+          Emergency Test API Call
+        </button>
+      </div>
     </div>
   );
 } 

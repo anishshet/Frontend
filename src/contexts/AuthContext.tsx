@@ -26,7 +26,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     token: 'mock-token-123'
   });
   const [token, setToken] = useState<string | null>(
-    localStorage.getItem('token') || 'mock-token-123'
+    sessionStorage.getItem('token') || 'mock-token-123'
   );
 
   const isAuthenticated = !!token;
@@ -54,8 +54,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         throw new Error('No authentication token received');
       }
 
-      // Save received JWT token to localStorage
-      localStorage.setItem('token', userData.token);
+      // Save received JWT token to sessionStorage
+      sessionStorage.setItem('token', userData.token);
       setToken(userData.token);
       setUser(userData);
       
@@ -71,11 +71,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = () => {
     setUser(null);
     setToken(null);
-    localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
   };
 
   const getToken = () => {
-    return token || localStorage.getItem('token');
+    return token || sessionStorage.getItem('token');
   };
 
   return (
