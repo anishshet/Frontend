@@ -18,7 +18,6 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ user }) => {
 
   const handleLogout = async () => {
     try {
-      // Clear the session token
       sessionStorage.removeItem("token");
       navigate("/login");
     } catch (error) {

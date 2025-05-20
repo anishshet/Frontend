@@ -25,25 +25,38 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (email: string, password: string): Promise<User> => {
     try {
-      // Mock login for now
-      const mockUser: User = {
-        _id: '123',
-        email: email,
-        firstName: 'Test',
-        lastName: 'User',
-        role: 'ADMIN',
-        token: 'mock-token-123'
-      };
+      // Make a real API call to your backend
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Login failed');
+      }
+
+      const userData = await response.json();
       
-      // Save to localStorage
-      localStorage.setItem('token', mockUser.token);
-      setToken(mockUser.token);
-      setUser(mockUser);
+      // Ensure the response contains a token
+      if (!userData.token) {
+        throw new Error('No authentication token received');
+      }
+
+      // Save received JWT token to localStorage
+      localStorage.setItem('token', userData.token);
+      setToken(userData.token);
+      setUser(userData);
       
-      return mockUser;
+      return userData;
     } catch (error) {
       console.error("Login failed:", error);
-      throw new Error("Invalid credentials");
+      throw new Error(typeof error === 'object' && error !== null && 'message' in error
+        ? (error as Error).message
+        : "Invalid credentials");
     }
   };
 

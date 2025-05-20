@@ -1,16 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Shield, X, Loader2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { getAuthHeaders } from '../../utils/authUtils';
 
-// Define role options
-const roleOptions = [
-  { value: "USER", label: "User" },
-  { value: "ADMIN", label: "Admin" },
-  { value: "CO_ADMIN", label: "Co Admin" },
-  { value: "SUPERVISOR", label: "Supervisor" },
-  { value: "DESIGNER", label: "Designer" },
-];
+interface Role {
+  value: string;
+  label: string;
+}
 
 interface SendInviteComponentProps {
   isPopup?: boolean;
@@ -19,44 +14,119 @@ interface SendInviteComponentProps {
 }
 
 export function SendInviteComponent({ isPopup = false, onClose, onSuccess }: SendInviteComponentProps) {
- 
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState("USER");
+  const [role, setRole] = useState("");
+  const [roles, setRoles] = useState<Role[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingRoles, setIsLoadingRoles] = useState(true);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const { getToken } = useAuth();
+
+  // Fetch roles from API
+  useEffect(() => {
+    const fetchRoles = async () => {
+      try {
+        const token = getToken();
+        if (!token) {
+          throw new Error('Authentication token is missing');
+        }
+
+        console.log('Using token for roles API:', token); // Debug log for token
+
+        const response = await fetch("/api/roles", {
+          method: "GET",
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Roles API error:', errorText);
+          throw new Error('Failed to fetch roles');
+        }
+
+        const data = await response.json();
+        console.log('Roles data:', data); // Debug log
+        
+        // Transform the roles to match our interface
+        const formattedRoles = Array.isArray(data) ? 
+          data.map((role: string) => ({
+            value: role,
+            label: role.charAt(0) + role.slice(1).toLowerCase()
+          })) : [];
+          
+        setRoles(formattedRoles);
+        if (formattedRoles.length > 0) {
+          setRole(formattedRoles[0].value);
+        }
+      } catch (error) {
+        console.error('Error fetching roles:', error);
+        setSubmitError('Failed to load roles. Please refresh the page.');
+      } finally {
+        setIsLoadingRoles(false);
+      }
+    };
+
+    fetchRoles();
+  }, [getToken]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitError("");
     
-    if ( !email || !role) {
+    if (!email || !role) {
       setSubmitError("Please fill in all fields");
       return;
     }
 
     setIsSubmitting(true);
-    const data = {  email, role };
+    
+    // Get the JWT token - ensuring we use the same token from login
     const token = getToken();
+    console.log('Using token for invitation API:', token); // Debug log for token
+    
+    if (!token) {
+      setSubmitError("Authentication token is missing. Please log in again.");
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
+      // Prepare data matching the exact format required by API
+      const data = { 
+        email, 
+        role 
+      };
+      
+      console.log('Sending invitation data:', data); // Debug log
+      
       const response = await fetch("/api/invitation", {
         method: "POST",
-        headers: getAuthHeaders(token),
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify(data),
       });
 
+      console.log('Invitation response status:', response.status); // Debug log
+
       if (!response.ok) {
-        throw new Error(await response.text());
+        const errorText = await response.text();
+        console.error('API error response:', errorText); // Debug log
+        throw new Error(errorText || 'Failed to send invitation');
       }
 
+      const responseData = await response.json();
+      console.log('Invitation success response:', responseData); // Debug log
+
       setSubmitSuccess(true);
-     
       setEmail("");
-      setRole("USER");
+      setRole(roles.length > 0 ? roles[0].value : "");
       
-      // If in popup mode, call onSuccess and onClose after success
       if (isPopup) {
         setTimeout(() => {
           if (onSuccess) onSuccess();
@@ -117,10 +187,6 @@ export function SendInviteComponent({ isPopup = false, onClose, onSuccess }: Sen
   // Form fields component for reuse
   const renderFormFields = () => (
     <div className={isPopup ? "grid grid-cols-1 md:grid-cols-2 gap-6" : "space-y-5"}>
-     
-      
-      
-      
       <div>
         <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
           Email
@@ -144,13 +210,17 @@ export function SendInviteComponent({ isPopup = false, onClose, onSuccess }: Sen
           id="role"
           value={role}
           onChange={(e) => setRole(e.target.value)}
-          disabled={isSubmitting}
+          disabled={isSubmitting || isLoadingRoles}
           className="mt-1 block w-full h-11 px-4 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 transition-colors appearance-none bg-white"
           style={{ backgroundImage: "url(\"data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236B7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E\")", backgroundPosition: "right 0.5rem center", backgroundRepeat: "no-repeat", backgroundSize: "1.5em 1.5em", paddingRight: "2.5rem" }}
         >
-          {roleOptions.map(option => (
-            <option key={option.value} value={option.value}>{option.label}</option>
-          ))}
+          {isLoadingRoles ? (
+            <option value="">Loading roles...</option>
+          ) : (
+            roles.map(option => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))
+          )}
         </select>
       </div>
     </div>

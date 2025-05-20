@@ -36,7 +36,7 @@ api.interceptors.response.use(
 
 export const userService = {
   async login(credentials: LoginCredentials): Promise<User> {
-    const { data } = await api.post<ApiResponse<AuthResponse>>('/api/user/login', credentials);
+    const { data } = await api.post<ApiResponse<AuthResponse>>('/api/login', credentials);
     const { user, access_token } = data.data;
     
     localStorage.setItem(TOKEN_STORAGE_KEY, access_token);
@@ -48,7 +48,7 @@ export const userService = {
 
   async logout() {
     try {
-      await api.post('/api/user/logout', {}, {
+      await api.post('/api/logout', {}, {
         headers: {
           Authorization: `Bearer ${this.getToken()}`
         }
