@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Building, Edit, X } from 'lucide-react';
+import { Building, Edit, X, Mail, Phone, Globe, Hash, Users, MessageSquare } from 'lucide-react';
 import { CreateClientPage } from './CreateClientPage';
 import { ModalLayout } from '../components/ModalLayout';
+import { EditButton } from '../components/EditButton';
+import PhoneInput from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
 
 interface Client {
   _id: string;
@@ -10,6 +13,14 @@ interface Client {
   hqCountry: string;
   clientCode: string;
   createdAt: string;
+  clientMail: string;
+  clientContactNo: string;
+  chatId: string;
+  alternateContacts: {
+    name: string;
+    contactNo: string;
+    jobTitle: string;
+  }[];
 }
 
 interface EditClientModalProps {
@@ -20,19 +31,21 @@ interface EditClientModalProps {
 }
 
 const EditClientModal: React.FC<EditClientModalProps> = ({ isOpen, onClose, client, onSave }) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<Client>({
+    _id: '',
     clientName: '',
     hqCountry: '',
     clientCode: '',
+    createdAt: '',
+    clientMail: '',
+    clientContactNo: '',
+    chatId: '',
+    alternateContacts: []
   });
 
   useEffect(() => {
     if (client) {
-      setFormData({
-        clientName: client.clientName,
-        hqCountry: client.hqCountry,
-        clientCode: client.clientCode,
-      });
+      setFormData(client);
     }
   }, [client]);
 
@@ -46,73 +59,137 @@ const EditClientModal: React.FC<EditClientModalProps> = ({ isOpen, onClose, clie
     }
   };
 
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData(prev => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
+  };
+
   if (!client) return null;
 
   return (
     <ModalLayout
       isOpen={isOpen}
       onClose={onClose}
-      title="Edit Client"
-      icon={<Edit className="w-6 h-6 text-blue-600" />}
+      title="Edit Client Details"
+      icon={<Edit className="w-6 h-6 text-blue-500" />}
+      maxWidth="max-w-4xl"
     >
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Client Name
-            </label>
-            <input
-              type="text"
-              value={formData.clientName}
-              onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
-              className="mt-1 block w-full h-11 px-4 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 transition-colors"
-              required
-            />
-          </div>
+          {[
+            { label: 'Email', name: 'clientMail', icon: <Mail className="w-5 h-5 text-blue-500" /> },
+            { label: 'Contact', name: 'clientContactNo', icon: <Phone className="w-5 h-5 text-green-500" /> },
+            { label: 'HQ Country', name: 'hqCountry', icon: <Globe className="w-5 h-5 text-indigo-500" /> },
+            { label: 'Client Code', name: 'clientCode', icon: <Hash className="w-5 h-5 text-gray-500" /> },
+            { label: 'Chat ID', name: 'chatId', icon: <MessageSquare className="w-5 h-5 text-orange-500" /> },
+          ].map(({ label, name, icon }) => (
+            <div key={name} className="flex items-center space-x-3">
+              {icon}
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+                {name === 'clientContactNo' ? (
+                  <PhoneInput
+                    international
+                    defaultCountry="US"
+                    value={formData[name] as string}
+                    onChange={(value) => setFormData(prev => ({ ...prev, [name]: value || '' }))}
+                    className="border p-2 rounded-md w-full"
+                  />
+                ) : (
+                  <input
+                    type="text"
+                    name={name}
+                    value={formData[name as keyof Client] as string}
+                    onChange={handleChange}
+                    className="border p-2 rounded-md w-full"
+                  />
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Location
-            </label>
-            <input
-              type="text"
-              value={formData.hqCountry}
-              onChange={(e) => setFormData({ ...formData, hqCountry: e.target.value })}
-              className="mt-1 block w-full h-11 px-4 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 transition-colors"
-              required
-            />
+        {/* Alternate Contacts Section */}
+        <div className="mt-8">
+          <div className="flex items-center mb-4">
+            <Users className="w-5 h-5 text-purple-500 mr-2" />
+            <h3 className="text-lg font-bold">Alternate Contacts</h3>
           </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Client Code
-            </label>
-            <input
-              type="text"
-              value={formData.clientCode}
-              onChange={(e) => setFormData({ ...formData, clientCode: e.target.value })}
-              className="mt-1 block w-full h-11 px-4 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 transition-colors"
-              required
-            />
+          <div className="space-y-4">
+            {formData.alternateContacts?.map((contact, index) => (
+              <div key={index} className="p-4 border rounded-md">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                    <input
+                      type="text"
+                      value={contact.name}
+                      onChange={(e) => {
+                        const updatedContacts = [...formData.alternateContacts];
+                        updatedContacts[index] = { ...updatedContacts[index], name: e.target.value };
+                        setFormData(prev => ({ ...prev, alternateContacts: updatedContacts }));
+                      }}
+                      className="border p-2 rounded-md w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Contact Number</label>
+                    <PhoneInput
+                      international
+                      defaultCountry="US"
+                      value={contact.contactNo}
+                      onChange={(value) => {
+                        const updatedContacts = [...formData.alternateContacts];
+                        updatedContacts[index] = { ...updatedContacts[index], contactNo: value || '' };
+                        setFormData(prev => ({ ...prev, alternateContacts: updatedContacts }));
+                      }}
+                      className="border p-2 rounded-md w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Job Title</label>
+                    <input
+                      type="text"
+                      value={contact.jobTitle}
+                      onChange={(e) => {
+                        const updatedContacts = [...formData.alternateContacts];
+                        updatedContacts[index] = { ...updatedContacts[index], jobTitle: e.target.value };
+                        setFormData(prev => ({ ...prev, alternateContacts: updatedContacts }));
+                      }}
+                      className="border p-2 rounded-md w-full"
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => {
+                const updatedContacts = [...formData.alternateContacts];
+                updatedContacts.push({ name: '', contactNo: '', jobTitle: '' });
+                setFormData(prev => ({ ...prev, alternateContacts: updatedContacts }));
+              }}
+              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              Add Alternate Contact
+            </button>
           </div>
         </div>
 
-        <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200 mt-8">
+        {/* Action Buttons */}
+        <div className="flex justify-end space-x-3 mt-6">
           <button
             type="button"
-            onClick={() => {
-              if (window.confirm('Are you sure you want to delete this client?')) {
-                // Handle delete
-                onClose();
-              }
-            }}
-            className="px-4 py-2 text-red-600 hover:text-red-800 font-medium transition-colors"
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
           >
-            Delete Client
+            Cancel
           </button>
           <button
             type="submit"
-            className="px-6 py-3 text-base border border-transparent font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors shadow-sm"
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
           >
             Save Changes
           </button>
@@ -128,35 +205,70 @@ const mockClients: Client[] = [
     clientName: 'Acme Corporation',
     hqCountry: 'United States',
     clientCode: 'ACME',
-    createdAt: '2023-01-15T12:00:00Z'
+    createdAt: '2023-01-15T12:00:00Z',
+    clientMail: 'acme@example.com',
+    clientContactNo: '+1-555-1234',
+    chatId: 'acme_chat',
+    alternateContacts: [
+      { name: 'John Doe', contactNo: '+1-555-5678', jobTitle: 'Sales Manager' },
+      { name: 'Jane Smith', contactNo: '+1-555-9012', jobTitle: 'Marketing Specialist' },
+    ]
   },
   {
     _id: '2',
     clientName: 'TechGlobal Industries',
     hqCountry: 'Germany',
     clientCode: 'TGI',
-    createdAt: '2023-02-20T14:30:00Z'
+    createdAt: '2023-02-20T14:30:00Z',
+    clientMail: 'tgi@example.com',
+    clientContactNo: '+49-30-1234567',
+    chatId: 'tgi_chat',
+    alternateContacts: [
+      { name: 'Hans Müller', contactNo: '+49-30-2345678', jobTitle: 'Sales Representative' },
+      { name: 'Erika Schmidt', contactNo: '+49-30-3456789', jobTitle: 'Technical Support' },
+    ]
   },
   {
     _id: '3',
     clientName: 'Sakura Solutions',
     hqCountry: 'Japan',
     clientCode: 'SKRS',
-    createdAt: '2023-03-10T09:15:00Z'
+    createdAt: '2023-03-10T09:15:00Z',
+    clientMail: 'sakura@example.com',
+    clientContactNo: '+81-3-1234-5678',
+    chatId: 'sakura_chat',
+    alternateContacts: [
+      { name: 'Yumi Tanaka', contactNo: '+81-3-2345-6789', jobTitle: 'Project Manager' },
+      { name: 'Taro Sato', contactNo: '+81-3-3456-7890', jobTitle: 'Software Developer' },
+    ]
   },
   {
     _id: '4',
     clientName: 'Nordic Innovations',
     hqCountry: 'Sweden',
     clientCode: 'NRDI',
-    createdAt: '2023-04-05T16:45:00Z'
+    createdAt: '2023-04-05T16:45:00Z',
+    clientMail: 'nordic@example.com',
+    clientContactNo: '+46-8-1234567',
+    chatId: 'nordic_chat',
+    alternateContacts: [
+      { name: 'Erik Karlsson', contactNo: '+46-8-2345678', jobTitle: 'Sales Manager' },
+      { name: 'Elin Andersson', contactNo: '+46-8-3456789', jobTitle: 'Marketing Specialist' },
+    ]
   },
   {
     _id: '5',
     clientName: 'Sahara Enterprises',
     hqCountry: 'UAE',
     clientCode: 'SHRA',
-    createdAt: '2023-05-22T11:20:00Z'
+    createdAt: '2023-05-22T11:20:00Z',
+    clientMail: 'sahara@example.com',
+    clientContactNo: '+971-50-1234567',
+    chatId: 'sahara_chat',
+    alternateContacts: [
+      { name: 'Mohamed Al-Farsi', contactNo: '+971-50-2345678', jobTitle: 'Sales Manager' },
+      { name: 'Aisha Al-Farsi', contactNo: '+971-50-3456789', jobTitle: 'Marketing Specialist' },
+    ]
   },
 ];
 
@@ -173,7 +285,11 @@ export function ClientsPage() {
       clientName: 'New Client',
       hqCountry: 'United States',
       clientCode: 'NEW',
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      clientMail: '',
+      clientContactNo: '',
+      chatId: '',
+      alternateContacts: []
     };
     
     setClients([newClient, ...clients]);
@@ -247,13 +363,7 @@ export function ClientsPage() {
                 </td>
                 {isActionAllowed && (
                   <td className="px-3 py-4 text-sm text-gray-500">
-                    <button
-                      onClick={() => handleEditClient(client._id)}
-                      className="text-blue-600 hover:text-blue-900 inline-flex items-center"
-                      title="Edit client"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </button>
+                    <EditButton onClick={() => handleEditClient(client._id)} />
                   </td>
                 )}
               </tr>

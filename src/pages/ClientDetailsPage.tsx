@@ -9,6 +9,8 @@ import {
 import PhoneInput from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
 import { useAuth } from '../contexts/AuthContext';
+import { ModalLayout } from '../components/ModalLayout';
+import { EditButton } from '../components/EditButton';
 
 export function ClientDetailsPage() {
   const { clientId } = useParams<{ clientId: string }>();
@@ -88,31 +90,9 @@ export function ClientDetailsPage() {
           <h2 className="text-3xl font-bold text-gray-900">{client?.clientName}</h2>
           <p className="text-gray-500 text-sm">Below are the client details</p>
         </div>
-        {/* Render Edit controls only if editing is allowed (i.e. user is admin) */}
+        {/* Render Edit button only if editing is allowed (i.e. user is admin) */}
         {isEditAllowed && (
-          !isEditing ? (
-            <button 
-              onClick={handleEditClick} 
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            >
-              <Pencil className="w-4 h-4 mr-2" /> Edit
-            </button>
-          ) : (
-            <div className="flex space-x-3">
-              <button 
-                onClick={handleSaveClick} 
-                className="flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-              >
-                <Save className="w-4 h-4 mr-2" /> Save
-              </button>
-              <button 
-                onClick={handleCancelClick} 
-                className="flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-              >
-                <X className="w-4 h-4 mr-2" /> Cancel
-              </button>
-            </div>
-          )
+          <EditButton onClick={handleEditClick} />
         )}
       </div>
 
@@ -135,38 +115,19 @@ export function ClientDetailsPage() {
         ].map(({ label, name, icon }) => (
           <div key={name} className="flex items-center space-x-3">
             {icon}
-            {isEditing && isEditAllowed ? (
-              <input
-                type="text"
-                name={name}
-                value={(() => {
-                  const value = editedClient?.[name as keyof Client];
-                  if (value instanceof Date) {
-                    return value.toLocaleDateString();
-                  }
-                  if (Array.isArray(value)) {
-                    return value.join(', ');
-                  }
-                  return value?.toString() || '';
-                })()}
-                onChange={handleChange}
-                className="border p-2 rounded-md w-full"
-              />
-            ) : (
-              <p className="text-gray-700">
-                <strong>{label}:</strong>{' '}
-                {(() => {
-                  const value = client?.[name as keyof Client];
-                  if (value instanceof Date) {
-                    return value.toLocaleDateString();
-                  }
-                  if (Array.isArray(value)) {
-                    return value.join(', ');
-                  }
-                  return value?.toString() || 'N/A';
-                })()}
-              </p>
-            )}
+            <p className="text-gray-700">
+              <strong>{label}:</strong>{' '}
+              {(() => {
+                const value = client?.[name as keyof Client];
+                if (value instanceof Date) {
+                  return value.toLocaleDateString();
+                }
+                if (Array.isArray(value)) {
+                  return value.join(', ');
+                }
+                return value?.toString() || 'N/A';
+              })()}
+            </p>
           </div>
         ))}
 
@@ -185,49 +146,114 @@ export function ClientDetailsPage() {
             <Users className="w-5 h-5 text-purple-500 inline-block mr-2" />
             <h3 className="text-lg font-bold inline-block">Alternate Contacts</h3>
           </div>
-          {isEditing && isEditAllowed ? (
-            <div className="mt-4 space-y-4">
+          <div className="mt-4 space-y-4">
+            {client?.alternateContacts && client.alternateContacts.length > 0 ? (
+              client.alternateContacts.map((contact, index) => (
+                <div key={index} className="p-4 border rounded-md">
+                  <p><strong>Name:</strong> {contact.name}</p>
+                  <p><strong>Contact No:</strong> {contact.contactNo}</p>
+                  <p><strong>Job Title:</strong> {contact.jobTitle}</p>
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-700">N/A</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Edit Modal */}
+      <ModalLayout
+        isOpen={isEditing}
+        onClose={handleCancelClick}
+        title="Edit Client Details"
+        icon={<Pencil className="w-6 h-6 text-blue-500" />}
+        maxWidth="max-w-4xl"
+      >
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {[
+              { label: 'Email', name: 'clientMail', icon: <Mail className="w-5 h-5 text-blue-500" /> },
+              { label: 'Contact', name: 'clientContactNo', icon: <Phone className="w-5 h-5 text-green-500" /> },
+              { label: 'HQ Country', name: 'hqCountry', icon: <Globe className="w-5 h-5 text-indigo-500" /> },
+              { label: 'Client Code', name: 'clientCode', icon: <Hash className="w-5 h-5 text-gray-500" /> },
+              { label: 'Chat ID', name: 'chatId', icon: <MessageSquare className="w-5 h-5 text-orange-500" /> },
+            ].map(({ label, name, icon }) => (
+              <div key={name} className="flex items-center space-x-3">
+                {icon}
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+                  <input
+                    type="text"
+                    name={name}
+                    value={(() => {
+                      const value = editedClient?.[name as keyof Client];
+                      if (value instanceof Date) {
+                        return value.toLocaleDateString();
+                      }
+                      if (Array.isArray(value)) {
+                        return value.join(', ');
+                      }
+                      return value?.toString() || '';
+                    })()}
+                    onChange={handleChange}
+                    className="border p-2 rounded-md w-full"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Alternate Contacts Section */}
+          <div className="mt-8">
+            <div className="flex items-center mb-4">
+              <Users className="w-5 h-5 text-purple-500 mr-2" />
+              <h3 className="text-lg font-bold">Alternate Contacts</h3>
+            </div>
+            <div className="space-y-4">
               {editedClient?.alternateContacts?.map((contact, index) => (
                 <div key={index} className="p-4 border rounded-md">
-                  <div className="mb-2">
-                    <label className="block text-sm font-medium text-gray-700">Name</label>
-                    <input
-                      type="text"
-                      value={contact.name}
-                      onChange={(e) => {
-                        const updatedContacts = [...(editedClient?.alternateContacts || [])];
-                        updatedContacts[index] = { ...updatedContacts[index], name: e.target.value };
-                        setEditedClient(prev => prev ? { ...prev, alternateContacts: updatedContacts } : prev);
-                      }}
-                      className="border p-2 rounded-md w-full"
-                    />
-                  </div>
-                  <div className="mb-2">
-                    <label className="block text-sm font-medium text-gray-700">Contact Number</label>
-                    <PhoneInput
-                      international
-                      defaultCountry="US"
-                      value={contact.contactNo}
-                      onChange={(value) => {
-                        const updatedContacts = [...(editedClient?.alternateContacts || [])];
-                        updatedContacts[index] = { ...updatedContacts[index], contactNo: value || '' };
-                        setEditedClient(prev => prev ? { ...prev, alternateContacts: updatedContacts } : prev);
-                      }}
-                      className="border p-2 rounded-md w-full"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Job Title</label>
-                    <input
-                      type="text"
-                      value={contact.jobTitle}
-                      onChange={(e) => {
-                        const updatedContacts = [...(editedClient?.alternateContacts || [])];
-                        updatedContacts[index] = { ...updatedContacts[index], jobTitle: e.target.value };
-                        setEditedClient(prev => prev ? { ...prev, alternateContacts: updatedContacts } : prev);
-                      }}
-                      className="border p-2 rounded-md w-full"
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                      <input
+                        type="text"
+                        value={contact.name}
+                        onChange={(e) => {
+                          const updatedContacts = [...(editedClient?.alternateContacts || [])];
+                          updatedContacts[index] = { ...updatedContacts[index], name: e.target.value };
+                          setEditedClient(prev => prev ? { ...prev, alternateContacts: updatedContacts } : prev);
+                        }}
+                        className="border p-2 rounded-md w-full"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Contact Number</label>
+                      <PhoneInput
+                        international
+                        defaultCountry="US"
+                        value={contact.contactNo}
+                        onChange={(value) => {
+                          const updatedContacts = [...(editedClient?.alternateContacts || [])];
+                          updatedContacts[index] = { ...updatedContacts[index], contactNo: value || '' };
+                          setEditedClient(prev => prev ? { ...prev, alternateContacts: updatedContacts } : prev);
+                        }}
+                        className="border p-2 rounded-md w-full"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Job Title</label>
+                      <input
+                        type="text"
+                        value={contact.jobTitle}
+                        onChange={(e) => {
+                          const updatedContacts = [...(editedClient?.alternateContacts || [])];
+                          updatedContacts[index] = { ...updatedContacts[index], jobTitle: e.target.value };
+                          setEditedClient(prev => prev ? { ...prev, alternateContacts: updatedContacts } : prev);
+                        }}
+                        className="border p-2 rounded-md w-full"
+                      />
+                    </div>
                   </div>
                 </div>
               ))}
@@ -238,28 +264,30 @@ export function ClientDetailsPage() {
                   updatedContacts.push({ name: '', contactNo: '', jobTitle: '' });
                   setEditedClient(prev => prev ? { ...prev, alternateContacts: updatedContacts } : prev);
                 }}
-                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md"
+                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
               >
                 Add Alternate Contact
               </button>
             </div>
-          ) : (
-            <div className="mt-4 space-y-4">
-              {client?.alternateContacts && client.alternateContacts.length > 0 ? (
-                client.alternateContacts.map((contact, index) => (
-                  <div key={index} className="p-4 border rounded-md">
-                    <p><strong>Name:</strong> {contact.name}</p>
-                    <p><strong>Contact No:</strong> {contact.contactNo}</p>
-                    <p><strong>Job Title:</strong> {contact.jobTitle}</p>
-                  </div>
-                ))
-              ) : (
-                <p className="text-gray-700">N/A</p>
-              )}
-            </div>
-          )}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex justify-end space-x-3 mt-6">
+            <button
+              onClick={handleCancelClick}
+              className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSaveClick}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              Save Changes
+            </button>
+          </div>
         </div>
-      </div>
+      </ModalLayout>
     </div>
   );
 }
