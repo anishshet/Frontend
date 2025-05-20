@@ -4,6 +4,7 @@ export interface User {
   firstName: string;
   lastName: string;
   role: string;
+  token: string;
   // Add any other user properties from your backend
 }
 export interface AuthContextType {

@@ -16,9 +16,17 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  // Initialize with mock admin user
+  const [user, setUser] = useState<User | null>({
+    _id: '123',
+    email: 'admin@example.com',
+    firstName: 'Admin',
+    lastName: 'User',
+    role: 'ADMIN',
+    token: 'mock-token-123'
+  });
   const [token, setToken] = useState<string | null>(
-    localStorage.getItem('token')
+    localStorage.getItem('token') || 'mock-token-123'
   );
 
   const isAuthenticated = !!token;

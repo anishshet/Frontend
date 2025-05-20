@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Edit, X } from 'lucide-react';
+import { Edit, X, Shield } from 'lucide-react';
 import { type User } from '../types/auth';
 import { ManageUserService } from '../services/manageUserService';
 import { useAuth } from '../contexts/AuthContext';
@@ -176,6 +176,8 @@ export default function ManageUsers() {
     email: "",
     role: "",
   });
+  const { user: currentUser } = useAuth();
+  const isAdmin = currentUser?.role === 'ADMIN';
 
   const handleEditUser = (userId: string) => {
     const user = users.find(u => u._id === userId);
@@ -365,6 +367,12 @@ export default function ManageUsers() {
         <h1 className="text-3xl font-bold text-gray-800 mb-4 sm:mb-0">
           User Management
         </h1>
+        {!isAdmin && (
+          <div className="flex items-center gap-2 text-yellow-600 bg-yellow-50 px-4 py-2 rounded-lg">
+            <Shield className="w-5 h-5" />
+            <span className="text-sm font-medium">Admin access required for user management actions</span>
+          </div>
+        )}
       </header>
 
       {/* Error Message */}
@@ -511,13 +519,19 @@ export default function ManageUsers() {
                           </span>
                         </td>
                         <td className="px-6 py-4 text-right">
-                          <button
-                            onClick={() => handleEditUser(u._id)}
-                            className="text-blue-600 hover:text-blue-900 inline-flex items-center"
-                            title="Edit user"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </button>
+                          {isAdmin ? (
+                            <button
+                              onClick={() => handleEditUser(u._id)}
+                              className="text-blue-600 hover:text-blue-900 inline-flex items-center"
+                              title="Edit user"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </button>
+                          ) : (
+                            <span className="text-gray-400 cursor-not-allowed" title="Admin access required">
+                              <Edit className="h-4 w-4" />
+                            </span>
+                          )}
                         </td>
                       </tr>
                     ))
